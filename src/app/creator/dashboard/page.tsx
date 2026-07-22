@@ -323,8 +323,14 @@ function CreatorDashboardContent() {
             <div className={styles.seriesHubCard}>
               <div className={styles.hubVisual}>
                 <div className={styles.hubThumb}>
-                  <span className={styles.hubThumbTag}>Ongoing</span>
-                  {selectedSeries.name[0]?.toUpperCase()}
+                  <span className={styles.hubThumbTag}>
+                    {selectedSeries.status === "Draft" ? "Draft" : "Ongoing"}
+                  </span>
+                  {selectedSeries.thumbnail ? (
+                    <img src={selectedSeries.thumbnail} alt={selectedSeries.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    selectedSeries.name[0]?.toUpperCase()
+                  )}
                 </div>
                 <div className={styles.hubDetails}>
                   <div className={styles.hubTitle}>{selectedSeries.name}</div>
@@ -368,9 +374,22 @@ function CreatorDashboardContent() {
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
-                  // Save updated series name
-                  const updated = seriesList.map(s => s.id === selectedSeries.id ? { ...s, name: selectedSeries.name } : s);
+                  // Save updated series details
+                  const updated = seriesList.map(s => s.id === selectedSeries.id ? { 
+                    ...s, 
+                    name: selectedSeries.name,
+                    summary: editSummary,
+                    thumbnail: editSquareThumbUrl,
+                    verticalThumbnail: editVerticalThumbUrl
+                  } : s);
                   setSeriesList(updated);
+                  // Update selectedSeries so current view updates immediately
+                  setSelectedSeries({
+                    ...selectedSeries,
+                    summary: editSummary,
+                    thumbnail: editSquareThumbUrl,
+                    verticalThumbnail: editVerticalThumbUrl
+                  });
                   if (user) {
                     localStorage.setItem(`sampulkreativ_series_${user.email}`, JSON.stringify(updated));
                   }
@@ -767,7 +786,11 @@ function CreatorDashboardContent() {
                       <span className={styles.hubThumbTag}>
                         {s.status === "Draft" ? "Draft" : "Ongoing"}
                       </span>
-                      {s.name[0]?.toUpperCase()}
+                      {s.thumbnail ? (
+                        <img src={s.thumbnail} alt={s.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        s.name[0]?.toUpperCase()
+                      )}
                     </div>
                     <div className={styles.hubDetails}>
                       <div className={styles.hubTitle}>{s.name}</div>
@@ -793,10 +816,10 @@ function CreatorDashboardContent() {
                         setEditSummary(s.summary || "Ketika murid SMA di sebuah sekolah terpencil bernama Anita mendadak meninggal misterius, Askara dan teman-temannya mendapati serangkaian kejadian aneh mulai meghantui mereka. Mulai dari penampakan, mimpi-mimpi ganjil, hingga munculnya bunga mawar putih di jendela Askara. Saat sahabat mereka, Ifal, juga jatuh sakit dengan gejala serupa, mereka mencium kedahiran sosok misterius yang menghubungkan semua kejadian itu. Dihantui rasa takut, mereka menyelidiki kebenaran di balik kematian Anita.");
                         setEditCategory1(s.type === "Comic" ? "HOROR" : "SUPERHERO");
                         setEditCategory2(s.type === "Comic" ? "THRILLER" : "AKSI");
-                        setEditSquareThumbName("No file chosen");
-                        setEditVerticalThumbName("No file chosen");
-                        setEditSquareThumbUrl(null);
-                        setEditVerticalThumbUrl(null);
+                        setEditSquareThumbName(s.thumbnail ? "uploaded_square.png" : "No file chosen");
+                        setEditVerticalThumbName(s.verticalThumbnail ? "uploaded_vertical.png" : "No file chosen");
+                        setEditSquareThumbUrl(s.thumbnail || null);
+                        setEditVerticalThumbUrl(s.verticalThumbnail || null);
                       }}
                     >
                       Manage Series
