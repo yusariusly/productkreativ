@@ -90,6 +90,7 @@ function CreatorDashboardContent() {
   const [newEpisodeThumbUrl, setNewEpisodeThumbUrl] = useState<string | null>(null);
   const [newEpisodeContentName, setNewEpisodeContentName] = useState("No file chosen");
   const [newEpisodeContentUrl, setNewEpisodeContentUrl] = useState<string | null>(null);
+  const [episodePages, setEpisodePages] = useState<{ name: string; url: string; size: number }[]>([]);
   const [creatorNote, setCreatorNote] = useState("");
   const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [publishImmediately, setPublishImmediately] = useState(true);
@@ -223,6 +224,33 @@ function CreatorDashboardContent() {
     setShowUploadForm(false);
   };
 
+  const handleFilesSelected = (files: FileList | null) => {
+    if (!files) return;
+    const fileArray = Array.from(files);
+    let currentIdx = 0;
+    const loadedPages: { name: string; url: string; size: number }[] = [];
+
+    const readNext = () => {
+      if (currentIdx >= fileArray.length) {
+        setEpisodePages(prev => [...prev, ...loadedPages]);
+        return;
+      }
+      const file = fileArray[currentIdx];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        loadedPages.push({
+          name: file.name,
+          url: e.target?.result as string,
+          size: file.size
+        });
+        currentIdx++;
+        readNext();
+      };
+      reader.readAsDataURL(file);
+    };
+    readNext();
+  };
+
   const handleAddEpisodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEpisodeTitle.trim() || !selectedSeries || !user) return;
@@ -242,7 +270,8 @@ function CreatorDashboardContent() {
             thumbnail: newEpisodeThumbUrl || ep.thumbnail,
             episodeNumber: episodeNumber,
             creatorNote: creatorNote,
-            publishImmediately: publishImmediately
+            publishImmediately: publishImmediately,
+            pages: episodePages.map(p => p.url)
           };
         }
         return ep;
@@ -259,7 +288,8 @@ function CreatorDashboardContent() {
         thumbnail: newEpisodeThumbUrl || null,
         episodeNumber: episodeNumber,
         creatorNote: creatorNote,
-        publishImmediately: publishImmediately
+        publishImmediately: publishImmediately,
+        pages: episodePages.map(p => p.url)
       };
       updatedEps = [newEp, ...currentEps]; // New episodes stacked at the top
     }
@@ -291,6 +321,7 @@ function CreatorDashboardContent() {
     setNewEpisodeThumbUrl(null);
     setNewEpisodeContentName("No file chosen");
     setNewEpisodeContentUrl(null);
+    setEpisodePages([]);
     setCreatorNote("");
     setCommentsEnabled(true);
     setPublishImmediately(true);
@@ -441,8 +472,14 @@ function CreatorDashboardContent() {
                   </div>
                   <div className={styles.hubLang}>Indonesian</div>
                   <div className={styles.hubTags}>
-                    <span className={styles.hubTag}>#{selectedSeries.type.toUpperCase()}</span>
-                    <span className={styles.hubTag}>#Original</span>
+                    {selectedSeries.category1 && <span className={styles.hubTag}>#{selectedSeries.category1.toUpperCase()}</span>}
+                    {selectedSeries.category2 && <span className={styles.hubTag}>#{selectedSeries.category2.toUpperCase()}</span>}
+                    {!selectedSeries.category1 && !selectedSeries.category2 && (
+                      <>
+                        <span className={styles.hubTag}>#{selectedSeries.type.toUpperCase()}</span>
+                        <span className={styles.hubTag}>#Original</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -766,68 +803,69 @@ function CreatorDashboardContent() {
                         Gambar yang diunggah dengan rasio 16x9 sebelum tahun 2025 akan ditampilkan dalam ukuran 202x142.
                       </div>
                     </div>
-
                     {/* Card 3: Pilih File (Content) */}
                     <div className={styles.formCard} style={{ margin: 0 }}>
                       <div className={styles.formCardTitle}>Pilih File</div>
-                      <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                        <label className={styles.customFileBtn} style={{ position: "relative" }}>
-                          Pilih file untuk diunggah
-                          <input 
-                            type="file" 
-                            accept=".jpg,.jpeg,.png"
-                            style={{ position: "absolute", opacity: 0, cursor: "pointer", top: 0, left: 0, width: "100%", height: "100%" }}
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                setNewEpisodeContentName(file.name);
-                                const reader = new FileReader();
-                                reader.onload = (ev) => {
-                                  setNewEpisodeContentUrl(ev.target?.result as string);
-                                };
-                                reader.readAsDataURL(file);
-                              }
+                      <div style={{ display: "flex", gap: "12px", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                          <label className={styles.customFileBtn} style={{ position: "relative" }}>
+                            Pilih file untuk diunggah
+                            <input 
+                              type="file" 
+                              accept=".jpg,.jpeg,.png"
+                              multiple={true}
+                              style={{ position: "absolute", opacity: 0, cursor: "pointer", top: 0, left: 0, width: "100%", height: "100%" }}
+                              onChange={(e) => handleFilesSelected(e.target.files)}
+                            />
+                          </label>
+                          <button 
+                            type="button" 
+                            className="btn btn-outline btn-sm"
+                            onClick={() => {
+                              setEpisodePages([]);
                             }}
-                          />
-                        </label>
-                        <button 
-                          type="button" 
-                          className="btn btn-outline btn-sm"
-                          onClick={() => {
-                            setNewEpisodeContentName("No file chosen");
-                            setNewEpisodeContentUrl(null);
-                          }}
-                        >
-                          Hapus Semua
-                        </button>
+                          >
+                            Hapus Semua
+                          </button>
+                        </div>
                         <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>
-                          {newEpisodeContentUrl ? "1 / 100 gambar" : "0"} / 50MB
+                          {(episodePages.reduce((sum, p) => sum + p.size, 0) / (1024 * 1024)).toFixed(1)}MB / 50MB
                         </span>
                       </div>
 
-                      <div className={styles.uploadDragBox} style={{ position: "relative", minHeight: "180px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <input 
-                          type="file" 
-                          accept=".jpg,.jpeg,.png"
-                          style={{ position: "absolute", opacity: 0, cursor: "pointer", top: 0, left: 0, width: "100%", height: "100%" }}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              setNewEpisodeContentName(file.name);
-                              const reader = new FileReader();
-                              reader.onload = (ev) => {
-                                setNewEpisodeContentUrl(ev.target?.result as string);
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                        {newEpisodeContentUrl ? (
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "16px" }}>
-                            <img src={newEpisodeContentUrl} alt="Content Preview" style={{ maxHeight: "140px", borderRadius: "var(--radius-md)" }} />
-                            <p style={{ marginTop: "12px", fontSize: "12px", color: "#10b981", fontWeight: "bold" }}>✓ {newEpisodeContentName} siap diunggah</p>
-                          </div>
-                        ) : (
+                      {/* Upload grid as shown in screenshot */}
+                      {episodePages.length > 0 ? (
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: "12px", marginTop: "16px", background: "rgba(255,255,255,0.01)", padding: "12px", borderRadius: "var(--radius-md)", border: "1px dashed var(--border-primary)" }}>
+                          {episodePages.map((page, idx) => (
+                            <div key={idx} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", background: "var(--bg-secondary)", borderRadius: "var(--radius-sm)", padding: "6px", border: "1px solid var(--border-primary)" }}>
+                              <button
+                                type="button"
+                                style={{ position: "absolute", top: "-4px", right: "-4px", width: "18px", height: "18px", borderRadius: "50%", background: "rgba(239,68,68,0.95)", color: "#fff", border: "none", fontSize: "10px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 10, fontWeight: "bold", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEpisodePages(prev => prev.filter((_, i) => i !== idx));
+                                }}
+                              >
+                                ✕
+                              </button>
+                              <div style={{ width: "90px", height: "120px", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-xs)", background: "#000" }}>
+                                <img src={page.url} alt={`Page ${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              </div>
+                              <span style={{ fontSize: "10px", color: "var(--text-secondary)", marginTop: "6px", textAlign: "center", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", width: "90px" }}>
+                                {idx + 1}. {page.name.length > 12 ? page.name.substring(0, 8) + "..." : page.name}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className={styles.uploadDragBox} style={{ position: "relative", minHeight: "180px", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "16px" }}>
+                          <input 
+                            type="file" 
+                            accept=".jpg,.jpeg,.png"
+                            multiple={true}
+                            style={{ position: "absolute", opacity: 0, cursor: "pointer", top: 0, left: 0, width: "100%", height: "100%" }}
+                            onChange={(e) => handleFilesSelected(e.target.files)}
+                          />
                           <div>
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: "12px", color: "var(--text-tertiary)", display: "inline-block" }}>
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -837,8 +875,8 @@ function CreatorDashboardContent() {
                             <p style={{ fontWeight: "600", fontSize: "13px", color: "var(--text-secondary)" }}>Seret dan lepas file gambar</p>
                             <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>Atau klik di sini untuk memilih file</span>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
 
                       <div className={styles.imageRequirements} style={{ marginTop: "12px" }}>
                         Sistem akan memotong dan mengurangi ukuran gambar yang melebihi dimensi maksimal 800x1280px secara otomatis.<br />
@@ -1021,17 +1059,18 @@ function CreatorDashboardContent() {
                                       type="button" 
                                       className="btn btn-outline btn-xs"
                                       style={{ padding: "4px 12px", fontSize: "11px" }}
-                                       onClick={() => {
-                                         setEditingEpisodeId(ep.id);
-                                         setEpisodeNumber(ep.episodeNumber || Number(ep.title.match(/\d+/)?.[0]) || 20);
-                                         setNewEpisodeTitle(ep.title);
-                                         setNewEpisodeThumbName(ep.thumbnail ? "uploaded_thumbnail.png" : "No file chosen");
-                                         setNewEpisodeThumbUrl(ep.thumbnail || null);
-                                         setCreatorNote(ep.creatorNote || "");
-                                         setCommentsEnabled(ep.commentsEnabled !== "Dinonaktifkan");
-                                         setPublishImmediately(ep.publishImmediately !== false);
-                                         setShowAddEpisodeForm(true);
-                                       }}
+                                      onClick={() => {
+                                        setEditingEpisodeId(ep.id);
+                                        setEpisodeNumber(ep.episodeNumber || Number(ep.title.match(/\d+/)?.[0]) || 20);
+                                        setNewEpisodeTitle(ep.title);
+                                        setNewEpisodeThumbName(ep.thumbnail ? "uploaded_thumbnail.png" : "No file chosen");
+                                        setNewEpisodeThumbUrl(ep.thumbnail || null);
+                                        setEpisodePages(ep.pages ? ep.pages.map((url: string, i: number) => ({ name: `page_${i+1}.png`, url, size: Math.round(url.length * 0.75) })) : []);
+                                        setCreatorNote(ep.creatorNote || "");
+                                        setCommentsEnabled(ep.commentsEnabled !== "Dinonaktifkan");
+                                        setPublishImmediately(ep.publishImmediately !== false);
+                                        setShowAddEpisodeForm(true);
+                                      }}
                                     >
                                       Edit
                                     </button>
