@@ -98,6 +98,7 @@ function CreatorDashboardContent() {
 
   // Series List State
   const [seriesList, setSeriesList] = useState<any[]>([]);
+  const [seriesFilter, setSeriesFilter] = useState<"All" | "Comic" | "Novel" | "Video">("All");
 
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
@@ -1229,8 +1230,39 @@ function CreatorDashboardContent() {
         ) : activeMenu === "series" ? (
           /* List of Series Cards matching screenshot */
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)", marginTop: 0 }}>
-            {seriesList.length > 0 ? (
-              seriesList.map((s) => (
+            {/* Category Filter Buttons */}
+            <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+              {(["All", "Comic", "Novel", "Video"] as const).map((filter) => {
+                const label = filter === "All" ? "Semua" : filter === "Comic" ? "Komik" : filter === "Novel" ? "Novel" : "Video";
+                const isActive = seriesFilter === filter;
+                return (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => setSeriesFilter(filter)}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "var(--radius-md)",
+                      fontSize: "var(--text-sm)",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      background: isActive ? "rgba(147, 51, 234, 0.15)" : "rgba(255, 255, 255, 0.03)",
+                      border: isActive ? "1px solid var(--accent-purple)" : "1px solid rgba(255, 255, 255, 0.08)",
+                      color: isActive ? "#fff" : "var(--text-secondary)",
+                      boxShadow: isActive ? "0 0 10px rgba(147, 51, 234, 0.25)" : "none",
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {(() => {
+              const filteredList = seriesList.filter(s => seriesFilter === "All" || s.type?.toLowerCase() === seriesFilter.toLowerCase());
+              return filteredList.length > 0 ? (
+                filteredList.map((s) => (
                 <div key={s.id} className={styles.seriesHubCard} style={{ margin: 0 }}>
                   <div className={styles.hubVisual}>
                     <div className={styles.hubThumb}>
@@ -1296,10 +1328,11 @@ function CreatorDashboardContent() {
               ))
             ) : (
               <div style={{ textAlign: "center", padding: "48px 0", color: "var(--text-secondary)", background: "var(--bg-card)", border: "1px solid var(--border-primary)", borderRadius: "var(--radius-xl)" }}>
-                <p>Anda belum membuat serial apapun.</p>
+                <p>Tidak ada serial untuk kategori ini.</p>
               </div>
-            )}
-          </div>
+            )
+          })()}
+        </div>
         ) : activeMenu === "analisis" ? (
           <>
             {/* Revenue Summary Card */}
