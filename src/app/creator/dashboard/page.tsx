@@ -659,7 +659,6 @@ function CreatorDashboardContent() {
                   <form onSubmit={handleAddEpisodeSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
                     {/* Card 1: General Info */}
                     <div className={styles.formCard} style={{ margin: 0 }}>
-                      <div className={styles.formCardTitle}>Informasi Episode</div>
                       <div className={styles.formGrid}>
                         <div className={styles.formGroup}>
                           <label className={styles.formLabel}>Judul Serial</label>
