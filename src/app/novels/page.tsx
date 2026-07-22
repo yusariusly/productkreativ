@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { novelSeries, formatNumber } from "@/data/dummy";
 import styles from "./novels.module.css";
@@ -10,10 +10,50 @@ const genres = ["All", "Cyberpunk", "Fantasy", "Thriller", "Romance", "Action", 
 export default function NovelsPage() {
   const [activeGenre, setActiveGenre] = useState("All");
   const [sortBy, setSortBy] = useState("popular");
+  const [localNovels, setLocalNovels] = useState<any[]>([]);
+
+  useEffect(() => {
+    const list: any[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("sampulkreativ_series_")) {
+        try {
+          const items = JSON.parse(localStorage.getItem(key) || "[]");
+          if (Array.isArray(items)) {
+            items.forEach((item: any) => {
+              if (item.type === "Novel") {
+                list.push({
+                  id: item.id,
+                  title: item.name,
+                  author: "Ghani",
+                  type: "novel",
+                  genre: [item.category1 || "Fantasy", item.category2 || "Thriller"].filter(Boolean),
+                  rating: 4.8,
+                  views: item.views || 0,
+                  likes: 0,
+                  coverUrl: item.thumbnail || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&q=80",
+                  synopsis: item.summary || "No description.",
+                  totalChapters: item.chapters || 0,
+                  status: "ongoing",
+                  isOriginal: true,
+                  updatedAt: new Date().toISOString().split("T")[0]
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    setLocalNovels(list);
+  }, []);
+
+  const allNovels = [...localNovels, ...novelSeries];
 
   const filtered = activeGenre === "All"
-    ? novelSeries
-    : novelSeries.filter((s) => s.genre.includes(activeGenre));
+    ? allNovels
+    : allNovels.filter((s) => s.genre.some((g: string) => g.toLowerCase() === activeGenre.toLowerCase()));
 
   const sorted = [...filtered].sort((a, b) => {
     if (sortBy === "popular") return b.views - a.views;

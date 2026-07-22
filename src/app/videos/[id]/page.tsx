@@ -18,8 +18,10 @@ export default function VideoPlayerPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const series = videoSeries.find((s) => s.id === id) || videoSeries[0];
   
+  const [series, setSeries] = useState<any | null>(null);
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentEp, setCurrentEp] = useState(1);
   const [isPlaying, setIsPlaying] = useState(true);
   const [showEpisodes, setShowEpisodes] = useState(false);
@@ -28,6 +30,86 @@ export default function VideoPlayerPage({
   const [likeCount, setLikeCount] = useState(12400);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    let foundSeries = null;
+    let foundEpisodes: any[] = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("sampulkreativ_series_")) {
+        try {
+          const items = JSON.parse(localStorage.getItem(key) || "[]");
+          const match = items.find((item: any) => item.id === id);
+          if (match) {
+            foundSeries = {
+              id: match.id,
+              title: match.name,
+              author: "Ghani",
+              type: "video",
+              genre: [match.category1 || "Drama", match.category2 || "Action"].filter(Boolean),
+              rating: 4.8,
+              views: match.views || 0,
+              likes: 0,
+              coverUrl: match.thumbnail || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&q=80",
+              synopsis: match.summary || "No description.",
+              totalChapters: match.chapters || 0,
+              status: "ongoing",
+              isOriginal: true,
+              updatedAt: new Date().toISOString().split("T")[0]
+            };
+            
+            const email = key.replace("sampulkreativ_series_", "");
+            const epKey = `sampulkreativ_episodes_${email}`;
+            const epMap = JSON.parse(localStorage.getItem(epKey) || "{}");
+            const rawEps = epMap[id] || [];
+            
+            foundEpisodes = rawEps.map((ep: any, index: number) => ({
+              id: ep.id,
+              seriesId: id,
+              number: ep.episodeNumber || (rawEps.length - index),
+              title: ep.title,
+              publishedAt: ep.date,
+              thumbnailUrl: ep.thumbnail || null,
+              contentUrl: ep.contentUrl || null
+            }));
+            
+            break;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    
+    if (!foundSeries) {
+      const dummy = videoSeries.find((s) => s.id === id);
+      if (dummy) {
+        foundSeries = dummy;
+        foundEpisodes = Array.from({ length: dummy.totalChapters }).map((_, idx) => ({
+          number: idx + 1,
+          title: `Episode ${idx + 1}`
+        }));
+      }
+    }
+    
+    if (!foundSeries) {
+      foundSeries = videoSeries[0];
+    }
+    
+    setSeries(foundSeries);
+    setChapters(foundEpisodes);
+    setLoading(false);
+  }, [id]);
+
+  if (loading || !series) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#0a0e1a", color: "#fff" }}>
+        <p>Memuat pemutar video...</p>
+      </div>
+    );
+  }
+
   const totalEps = series.totalChapters;
   const isLocked = (ep: number) => ep > 20;
 
@@ -79,24 +161,38 @@ export default function VideoPlayerPage({
   const [activeRange, setActiveRange] = useState(0);
 
   // Pick a video URL based on episode number
-  const videoSrc = sampleVideos[(currentEp - 1) % sampleVideos.length];
+  const matchedEp = chapters.find(c => c.number === currentEp);
+  const videoSrc = (matchedEp && matchedEp.contentUrl) 
+    ? matchedEp.contentUrl 
+    : sampleVideos[(currentEp - 1) % sampleVideos.length];
+
+  const isImg = videoSrc.startsWith("data:image/") || videoSrc.includes("images.unsplash.com");
 
   return (
     <div className={styles.player}>
       {/* Video Area */}
       <div className={styles.videoArea}>
         <div className={styles.videoContainer}>
-          {/* HTML5 Video Player */}
-          <video
-            ref={videoRef}
-            src={videoSrc}
-            className={styles.videoElement}
-            autoPlay
-            loop
-            muted // Muted to allow browser autoPlay policy
-            playsInline
-            onClick={togglePlay}
-          />
+          {/* HTML5 Video Player or Image storyboard */}
+          {isImg ? (
+            <img 
+              src={videoSrc} 
+              className={styles.videoElement} 
+              alt="Mock Video Storyboard" 
+              style={{ objectFit: "cover", width: "100%", height: "100%", cursor: "pointer" }} 
+            />
+          ) : (
+            <video
+              ref={videoRef}
+              src={videoSrc}
+              className={styles.videoElement}
+              autoPlay
+              loop
+              muted // Muted to allow browser autoPlay policy
+              playsInline
+              onClick={togglePlay}
+            />
+          )}
           
           <div className={styles.videoGradient}></div>
 

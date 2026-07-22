@@ -131,43 +131,118 @@ export default function ComicViewerPage({
   const router = useRouter();
   const { isLoggedIn, addHistory } = useAuth();
   
-  const series = comicSeries.find((s) => s.id === id) || comicSeries[0];
+  const [series, setSeries] = useState<any | null>(null);
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [chapterData, setChapterData] = useState<any | null>(null);
+  const [panels, setPanels] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const currentChapter = parseInt(chapterNum) || 1;
-  const chapterData = sampleChapters.find((c) => c.number === currentChapter);
+
+  useEffect(() => {
+    let foundSeries = null;
+    let foundEpisodes: any[] = [];
+    let foundChapter = null;
+    let foundPanels: string[] = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("sampulkreativ_series_")) {
+        try {
+          const items = JSON.parse(localStorage.getItem(key) || "[]");
+          const match = items.find((item: any) => item.id === id);
+          if (match) {
+            foundSeries = {
+              id: match.id,
+              title: match.name,
+              author: "Ghani",
+              type: "comic",
+              genre: [match.category1 || "Action", match.category2 || "Sci-Fi"].filter(Boolean),
+              rating: 4.9,
+              views: match.views || 0,
+              likes: 0,
+              coverUrl: match.thumbnail || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&q=80",
+              synopsis: match.summary || "No description.",
+              totalChapters: match.chapters || 0,
+              status: "ongoing",
+              isOriginal: true,
+              updatedAt: new Date().toISOString().split("T")[0]
+            };
+            
+            const email = key.replace("sampulkreativ_series_", "");
+            const epKey = `sampulkreativ_episodes_${email}`;
+            const epMap = JSON.parse(localStorage.getItem(epKey) || "{}");
+            const rawEps = epMap[id] || [];
+            
+            foundEpisodes = rawEps.map((ep: any, index: number) => ({
+              id: ep.id,
+              seriesId: id,
+              number: ep.episodeNumber || (rawEps.length - index),
+              title: ep.title,
+              accessType: "free" as const,
+              coinPrice: 0,
+              publishedAt: ep.date,
+              views: ep.views || 0,
+              likes: 0,
+              comments: 0,
+              thumbnailUrl: ep.thumbnail || null,
+              contentUrl: ep.contentUrl || null
+            }));
+            
+            const matchedEp = foundEpisodes.find((e: any) => e.number === currentChapter);
+            if (matchedEp) {
+              foundChapter = matchedEp;
+              if (matchedEp.contentUrl) {
+                foundPanels = [matchedEp.contentUrl];
+              } else {
+                foundPanels = comicPanels;
+              }
+            } else {
+              foundPanels = comicPanels;
+            }
+            break;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    
+    if (!foundSeries) {
+      const dummy = comicSeries.find((s) => s.id === id);
+      if (dummy) {
+        foundSeries = dummy;
+        foundEpisodes = sampleChapters;
+        foundChapter = sampleChapters.find((c) => c.number === currentChapter);
+        foundPanels = comicPanels;
+      }
+    }
+    
+    if (!foundSeries) {
+      foundSeries = comicSeries[0];
+      foundEpisodes = sampleChapters;
+      foundChapter = sampleChapters[0];
+      foundPanels = comicPanels;
+    }
+    
+    setSeries(foundSeries);
+    setChapters(foundEpisodes);
+    setChapterData(foundChapter);
+    setPanels(foundPanels);
+    setLoading(false);
+  }, [id, currentChapter]);
 
   // Sync history dynamically on chapter read
   useEffect(() => {
-    if (isLoggedIn) {
+    if (isLoggedIn && !loading) {
       addHistory(id, currentChapter, "comic");
     }
-  }, [id, currentChapter, isLoggedIn]);
+  }, [id, currentChapter, isLoggedIn, loading]);
 
   const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(chapterData?.likes || 1200);
+  const [likeCount, setLikeCount] = useState(1200);
   const [favorited, setFavorited] = useState(false);
 
-  if (currentChapter > 30 && !isLoggedIn) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: "20px", background: "#0a0e1a", color: "#fff", textAlign: "center" }}>
-        <div style={{ maxWidth: "480px", padding: "40px 30px", border: "1px solid var(--accent-gold)", borderRadius: "var(--radius-xl)", background: "rgba(255,255,255,0.02)", boxShadow: "var(--shadow-glow-gold)" }}>
-          <span style={{ fontSize: "40px", marginBottom: "20px", display: "block" }}>🔒</span>
-          <h2 style={{ fontSize: "var(--text-2xl)", fontWeight: 800, color: "var(--accent-gold)", marginBottom: "var(--space-md)" }}>Bab Ini Terkunci</h2>
-          <p style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)", lineHeight: 1.6, marginBottom: "var(--space-xl)" }}>
-            Anda mencoba mengakses bab premium (Bab {currentChapter}). Silakan masuk (login) terlebih dahulu untuk membuka bab ini menggunakan koin atau menonton iklan.
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <Link href={`/login?redirect=/comics/${id}/${currentChapter}`} className="btn btn-gold btn-lg" style={{ width: "100%" }}>
-              Masuk Sekarang
-            </Link>
-            <Link href={`/comics/${id}`} className="btn btn-outline" style={{ width: "100%" }}>
-              Kembali ke Detail Komik
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
   // Navigation controls visibility toggle
   const [showControls, setShowControls] = useState(false);
   const [activeTab, setActiveTab] = useState("TERPOPULER");
@@ -183,6 +258,7 @@ export default function ComicViewerPage({
 
   // Sync state data on chapter change
   useEffect(() => {
+    if (loading) return;
     setComments(getInitialComments(currentChapter));
     setLiked(false);
     setLikeCount(chapterData?.likes || 1200);
@@ -204,7 +280,7 @@ export default function ComicViewerPage({
         });
       }
     }
-  }, [currentChapter, id, chapterData]);
+  }, [currentChapter, id, chapterData, loading]);
 
   const handleLike = () => {
     setLiked(!liked);
@@ -377,6 +453,14 @@ export default function ComicViewerPage({
     }
   };
 
+  if (loading || !series) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#0a0e1a", color: "#fff" }}>
+        <p>Memuat bab komik...</p>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.viewer} onClick={() => setShowControls(!showControls)}>
       
@@ -434,13 +518,13 @@ export default function ComicViewerPage({
 
       {/* Vertical Scroll Panels */}
       <div className={styles.panelContainer}>
-        {comicPanels.map((url, idx) => (
+        {panels.map((url, idx) => (
           <div key={idx} className={styles.panel}>
             <img src={url} alt={`Panel ${idx + 1}`} className={styles.panelImage} />
             {idx === 0 && (
               <div className={styles.panelTitleOverlay}>
                 <h2>{series.title}</h2>
-                <p>Chapter {currentChapter}: {chapterData?.title.split(": ")[1] || "The Awakening"}</p>
+                <p>Chapter {currentChapter}: {chapterData?.title?.includes(": ") ? chapterData.title.split(": ")[1] : chapterData?.title || "The Awakening"}</p>
               </div>
             )}
           </div>

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { comicSeries } from "@/data/dummy";
 import styles from "./comics.module.css";
 
-const genres = ["All", "Cyberpunk", "Action", "Fantasy", "Sci-Fi", "Mystery", "Comedy", "Drama", "Romance"];
+const genres = ["All", "Cyberpunk", "Action", "Fantasy", "Sci-Fi", "Mystery", "Comedy", "Drama", "Romance", "HOROR", "THRILLER"];
 
 // Helper functions for Indonesian style comic grids matching user's screenshot
 function getFlagEmoji(id: string): string {
@@ -29,10 +29,50 @@ function getMockUpdate(id: string): string {
 export default function ComicsPage() {
   const [activeGenre, setActiveGenre] = useState("All");
   const [sortBy, setSortBy] = useState("popular");
+  const [localComics, setLocalComics] = useState<any[]>([]);
+
+  useEffect(() => {
+    const list: any[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("sampulkreativ_series_")) {
+        try {
+          const items = JSON.parse(localStorage.getItem(key) || "[]");
+          if (Array.isArray(items)) {
+            items.forEach((item: any) => {
+              if (item.type === "Comic") {
+                list.push({
+                  id: item.id,
+                  title: item.name,
+                  author: "Ghani",
+                  type: "comic",
+                  genre: [item.category1 || "Action", item.category2 || "Sci-Fi"].filter(Boolean),
+                  rating: 4.9,
+                  views: item.views || 0,
+                  likes: 0,
+                  coverUrl: item.thumbnail || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&q=80",
+                  synopsis: item.summary || "No description.",
+                  totalChapters: item.chapters || 0,
+                  status: "ongoing",
+                  isOriginal: true,
+                  updatedAt: new Date().toISOString().split("T")[0]
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    setLocalComics(list);
+  }, []);
+
+  const allComics = [...localComics, ...comicSeries];
 
   const filtered = activeGenre === "All"
-    ? comicSeries
-    : comicSeries.filter((s) => s.genre.includes(activeGenre));
+    ? allComics
+    : allComics.filter((s) => s.genre.some((g: string) => g.toLowerCase() === activeGenre.toLowerCase()));
 
   const sorted = [...filtered].sort((a, b) => {
     if (sortBy === "popular") return b.views - a.views;

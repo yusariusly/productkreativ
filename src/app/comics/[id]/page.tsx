@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { comicSeries, sampleChapters, formatNumber } from "@/data/dummy";
@@ -23,10 +23,88 @@ export default function ComicDetailPage({ params }: { params: Promise<{ id: stri
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoggedIn, bookmarks, toggleBookmark } = useAuth();
-  
-  const series = comicSeries.find((s) => s.id === id) || comicSeries[0];
-  const chapters = sampleChapters;
+
+  const [series, setSeries] = useState<any | null>(null);
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const isBookmarked = bookmarks.includes(id);
+
+  useEffect(() => {
+    // 1. Search in localStorage creator series
+    let foundSeries = null;
+    let foundEpisodes: any[] = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("sampulkreativ_series_")) {
+        try {
+          const items = JSON.parse(localStorage.getItem(key) || "[]");
+          const match = items.find((item: any) => item.id === id);
+          if (match) {
+            foundSeries = {
+              id: match.id,
+              title: match.name,
+              author: "Ghani",
+              type: "comic",
+              genre: [match.category1 || "Action", match.category2 || "Sci-Fi"].filter(Boolean),
+              rating: 4.9,
+              views: match.views || 0,
+              likes: 0,
+              coverUrl: match.thumbnail || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&q=80",
+              synopsis: match.summary || "No description.",
+              totalChapters: match.chapters || 0,
+              status: "ongoing",
+              isOriginal: true,
+              updatedAt: new Date().toISOString().split("T")[0]
+            };
+            
+            // Extract owner email from key
+            const email = key.replace("sampulkreativ_series_", "");
+            const epKey = `sampulkreativ_episodes_${email}`;
+            const epMap = JSON.parse(localStorage.getItem(epKey) || "{}");
+            const rawEps = epMap[id] || [];
+            
+            // Map raw episodes to sample chapters structure
+            foundEpisodes = rawEps.map((ep: any, index: number) => ({
+              id: ep.id,
+              seriesId: id,
+              number: ep.episodeNumber || (rawEps.length - index),
+              title: ep.title,
+              accessType: "free" as const,
+              coinPrice: 0,
+              publishedAt: ep.date,
+              views: ep.views || 0,
+              likes: 0,
+              comments: 0
+            }));
+            
+            break;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    
+    // 2. If not found in creator series, search in dummy comicSeries
+    if (!foundSeries) {
+      const dummy = comicSeries.find((s) => s.id === id);
+      if (dummy) {
+        foundSeries = dummy;
+        foundEpisodes = sampleChapters;
+      }
+    }
+    
+    // 3. Fallback if completely missing
+    if (!foundSeries) {
+      foundSeries = comicSeries[0];
+      foundEpisodes = sampleChapters;
+    }
+    
+    setSeries(foundSeries);
+    setChapters(foundEpisodes);
+    setLoading(false);
+  }, [id]);
 
   // Automatically bookmark if redirected from login page with bookmark=true query
   useEffect(() => {
@@ -36,6 +114,14 @@ export default function ComicDetailPage({ params }: { params: Promise<{ id: stri
       }
     }
   }, [isLoggedIn, id, bookmarks, toggleBookmark, searchParams]);
+
+  if (loading || !series) {
+    return (
+      <div style={{ padding: "120px 0", textAlign: "center", color: "var(--text-secondary)" }}>
+        <p>Memuat detail komik...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
@@ -85,7 +171,7 @@ export default function ComicDetailPage({ params }: { params: Promise<{ id: stri
             </div>
             
             <div className={styles.genres}>
-              {series.genre.map((g) => (
+              {series.genre.map((g: string) => (
                 <span key={g} className="tag">{g}</span>
               ))}
             </div>

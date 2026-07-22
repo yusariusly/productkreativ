@@ -1,18 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { videoSeries, formatNumber } from "@/data/dummy";
 import styles from "./videos.module.css";
 
-const genres = ["All", "Drama", "Fantasy", "Romance", "Action"];
+const genres = ["All", "Drama", "Fantasy", "Romance", "Action", "HOROR", "THRILLER"];
 
 export default function VideosPage() {
   const [activeGenre, setActiveGenre] = useState("All");
+  const [localVideos, setLocalVideos] = useState<any[]>([]);
+
+  useEffect(() => {
+    const list: any[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("sampulkreativ_series_")) {
+        try {
+          const items = JSON.parse(localStorage.getItem(key) || "[]");
+          if (Array.isArray(items)) {
+            items.forEach((item: any) => {
+              if (item.type === "Video") {
+                list.push({
+                  id: item.id,
+                  title: item.name,
+                  author: "Ghani",
+                  type: "video",
+                  genre: [item.category1 || "Drama", item.category2 || "Action"].filter(Boolean),
+                  rating: 4.8,
+                  views: item.views || 0,
+                  likes: 0,
+                  coverUrl: item.thumbnail || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&q=80",
+                  synopsis: item.summary || "No description.",
+                  totalChapters: item.chapters || 0,
+                  status: "ongoing",
+                  isOriginal: true,
+                  updatedAt: new Date().toISOString().split("T")[0]
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    setLocalVideos(list);
+  }, []);
+
+  const allVideos = [...localVideos, ...videoSeries];
 
   const filtered = activeGenre === "All"
-    ? videoSeries
-    : videoSeries.filter((s) => s.genre.includes(activeGenre));
+    ? allVideos
+    : allVideos.filter((s) => s.genre.some((g: string) => g.toLowerCase() === activeGenre.toLowerCase()));
 
   return (
     <div className={styles.page}>

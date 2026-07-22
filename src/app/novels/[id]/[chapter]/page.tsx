@@ -84,16 +84,101 @@ export default function NovelReaderPage({
   const { t } = useLanguage();
   const { isLoggedIn, addHistory } = useAuth();
   
-  const series = novelSeries.find((s) => s.id === id) || novelSeries[0];
+  const [series, setSeries] = useState<any | null>(null);
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [panels, setPanels] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const currentChapter = parseInt(chapterNum) || 1;
-  const content = getChapterContent(currentChapter, series.author);
+
+  useEffect(() => {
+    let foundSeries = null;
+    let foundEpisodes: any[] = [];
+    let foundPanels: string[] = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("sampulkreativ_series_")) {
+        try {
+          const items = JSON.parse(localStorage.getItem(key) || "[]");
+          const match = items.find((item: any) => item.id === id);
+          if (match) {
+            foundSeries = {
+              id: match.id,
+              title: match.name,
+              author: "Ghani",
+              type: "novel",
+              genre: [match.category1 || "Fantasy", match.category2 || "Thriller"].filter(Boolean),
+              rating: 4.8,
+              views: match.views || 0,
+              likes: 0,
+              coverUrl: match.thumbnail || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&q=80",
+              synopsis: match.summary || "No description.",
+              totalChapters: match.chapters || 0,
+              status: "ongoing",
+              isOriginal: true,
+              updatedAt: new Date().toISOString().split("T")[0]
+            };
+            
+            const email = key.replace("sampulkreativ_series_", "");
+            const epKey = `sampulkreativ_episodes_${email}`;
+            const epMap = JSON.parse(localStorage.getItem(epKey) || "{}");
+            const rawEps = epMap[id] || [];
+            
+            foundEpisodes = rawEps.map((ep: any, index: number) => ({
+              id: ep.id,
+              seriesId: id,
+              number: ep.episodeNumber || (rawEps.length - index),
+              title: ep.title,
+              accessType: "free" as const,
+              coinPrice: 0,
+              publishedAt: ep.date,
+              views: ep.views || 0,
+              likes: 0,
+              comments: 0,
+              thumbnailUrl: ep.thumbnail || null,
+              contentUrl: ep.contentUrl || null
+            }));
+            
+            const matchedEp = foundEpisodes.find((e: any) => e.number === currentChapter);
+            if (matchedEp && matchedEp.contentUrl) {
+              foundPanels = [matchedEp.contentUrl];
+            }
+            break;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+    
+    if (!foundSeries) {
+      const dummy = novelSeries.find((s) => s.id === id);
+      if (dummy) {
+        foundSeries = dummy;
+        foundEpisodes = Array.from({ length: dummy.totalChapters }).map((_, idx) => ({
+          number: idx + 1,
+          title: `Kekuatan yang Tersembunyi - Bagian ${idx + 1}`
+        }));
+      }
+    }
+    
+    if (!foundSeries) {
+      foundSeries = novelSeries[0];
+    }
+    
+    setSeries(foundSeries);
+    setChapters(foundEpisodes);
+    setPanels(foundPanels);
+    setLoading(false);
+  }, [id, currentChapter]);
 
   // Record history dynamically when user reads a chapter
   useEffect(() => {
-    if (isLoggedIn) {
+    if (isLoggedIn && !loading) {
       addHistory(id, currentChapter, "novel");
     }
-  }, [id, currentChapter, isLoggedIn]);
+  }, [id, currentChapter, isLoggedIn, loading]);
 
   const [showControls, setShowControls] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -102,6 +187,16 @@ export default function NovelReaderPage({
   const [readerTheme, setReaderTheme] = useState<ReaderTheme>("dark");
   const [voted, setVoted] = useState(false);
   const [showComments, setShowComments] = useState<number | null>(null);
+
+  const content = getChapterContent(currentChapter, series?.author || "Author");
+
+  if (loading || !series) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#0a0e1a", color: "#fff" }}>
+        <p>Memuat bab novel...</p>
+      </div>
+    );
+  }
 
   if (currentChapter > 30 && !isLoggedIn) {
     return (
@@ -246,21 +341,29 @@ export default function NovelReaderPage({
         </div>
 
         <div className={styles.textContent}>
-          {content.paragraphs.map((paragraph, i) => (
-            <div key={i} className={styles.paragraph}>
-              <p>{paragraph}</p>
-              <button
-                className={styles.inlineCommentBtn}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowComments(showComments === i ? null : i);
-                }}
-                title={`${content.commentCounts[i]} komentar`}
-              >
-                {content.commentCounts[i]}
-              </button>
-            </div>
-          ))}
+          {panels.length > 0 ? (
+            panels.map((url, i) => (
+              <div key={i} className={styles.paragraph} style={{ justifyContent: "center" }}>
+                <img src={url} alt={`Panel ${i+1}`} style={{ maxWidth: "100%", borderRadius: "var(--radius-md)" }} />
+              </div>
+            ))
+          ) : (
+            content.paragraphs.map((paragraph, i) => (
+              <div key={i} className={styles.paragraph}>
+                <p>{paragraph}</p>
+                <button
+                  className={styles.inlineCommentBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowComments(showComments === i ? null : i);
+                  }}
+                  title={`${content.commentCounts[i]} komentar`}
+                >
+                  {content.commentCounts[i]}
+                </button>
+              </div>
+            ))
+          )}
         </div>
 
         {/* End of Chapter */}
