@@ -1073,3 +1073,119 @@
   font-size: 11px;
   font-weight: bold;
 }
+
+/* Episode Table Styles */
+.episodeTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-md);
+  text-align: left;
+}
+
+.episodeTable th {
+  padding: var(--space-md);
+  border-bottom: 2px solid var(--border-primary);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.episodeTable td {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border-primary);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.episodeThumbCell {
+  width: 100px;
+  height: 70px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.episodeThumbCell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.episodeTitleLink {
+  color: var(--text-primary);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.episodeTitleLink:hover {
+  color: var(--accent-purple-light);
+}
+
+/* Drag and Drop Container */
+.uploadDragBox {
+  border: 2px dashed var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  text-align: center;
+  background: rgba(255, 255, 255, 0.01);
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  margin-top: var(--space-sm);
+  transition: all var(--transition-fast);
+}
+
+.uploadDragBox:hover {
+  border-color: var(--accent-purple);
+  background: rgba(139, 92, 246, 0.05);
+  color: var(--text-primary);
+}
+
+.tipsProBox {
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  font-size: 11px;
+  color: var(--accent-gold);
+  line-height: 1.6;
+  margin-top: var(--space-sm);
+}
+
+.scheduledBadge {
+  background: rgba(139, 92, 246, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  color: var(--accent-purple-light);
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  margin-top: var(--space-xs);
+}
+
+.radioGroup {
+  display: flex;
+  gap: var(--space-xl);
+  align-items: center;
+  margin-top: var(--space-xs);
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.radioLabel input {
+  cursor: pointer;
+  accent-color: var(--accent-purple);
+}

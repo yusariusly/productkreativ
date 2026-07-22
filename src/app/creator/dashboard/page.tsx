@@ -84,6 +84,16 @@ function CreatorDashboardContent() {
   const [editSquareThumbUrl, setEditSquareThumbUrl] = useState<string | null>(null);
   const [editVerticalThumbUrl, setEditVerticalThumbUrl] = useState<string | null>(null);
 
+  // Fancy Tambah Episode Form States
+  const [episodeNumber, setEpisodeNumber] = useState<number>(24);
+  const [newEpisodeThumbName, setNewEpisodeThumbName] = useState("No file chosen");
+  const [newEpisodeThumbUrl, setNewEpisodeThumbUrl] = useState<string | null>(null);
+  const [newEpisodeContentName, setNewEpisodeContentName] = useState("No file chosen");
+  const [newEpisodeContentUrl, setNewEpisodeContentUrl] = useState<string | null>(null);
+  const [creatorNote, setCreatorNote] = useState("");
+  const [commentsEnabled, setCommentsEnabled] = useState(true);
+  const [publishImmediately, setPublishImmediately] = useState(true);
+
   // Series List State
   const [seriesList, setSeriesList] = useState<any[]>([]);
 
@@ -102,40 +112,57 @@ function CreatorDashboardContent() {
   useEffect(() => {
     if (isLoggedIn && user) {
       const key = `sampulkreativ_series_${user.email}`;
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        setSeriesList(JSON.parse(saved));
-      } else {
-        const initial = [
-          { id: "1", name: "Cyberpunk: Neon Dreams", type: "Comic", chapters: 42, views: 1250000, coins: 1240, status: "Published" },
+      let saved = localStorage.getItem(key);
+      let list = saved ? JSON.parse(saved) : [];
+      
+      // If empty or matches old template, overwrite with the user's mockup data
+      if (list.length === 0 || list[0]?.name === "Cyberpunk: Neon Dreams") {
+        list = [
+          { 
+            id: "1", 
+            name: "Night Stalkers", 
+            type: "Comic", 
+            chapters: 20, 
+            views: 1250000, 
+            coins: 1240, 
+            status: "Published",
+            summary: "Ketika murid SMA di sebuah sekolah terpencil bernama Anita mendadak meninggal misterius, Askara dan teman-temannya mendapati serangkaian kejadian aneh mulai meghantui mereka. Mulai dari penampakan, mimpi-mimpi ganjil, hingga munculnya bunga mawar putih di jendela Askara. Saat sahabat mereka, Ifal, juga jatuh sakit dengan gejala serupa, mereka mencium kedahiran sosok misterius yang menghubungkan semua kejadian itu. Dihantui rasa takut, mereka menyelidiki kebenaran di balik kematian Anita.",
+            category1: "HOROR",
+            category2: "THRILLER"
+          },
           { id: "2", name: "Under the Purple Neon Sky", type: "Novel", chapters: 15, views: 340000, coins: 450, status: "Published" },
           { id: "3", name: "Chrome Hearts (Short Series)", type: "Video", chapters: 30, views: 890000, coins: 890, status: "Draft" },
         ];
-        localStorage.setItem(key, JSON.stringify(initial));
-        setSeriesList(initial);
+        localStorage.setItem(key, JSON.stringify(list));
       }
+      setSeriesList(list);
 
       // Load episodes
       const epKey = `sampulkreativ_episodes_${user.email}`;
-      const savedEps = localStorage.getItem(epKey);
-      if (savedEps) {
-        setEpisodesMap(JSON.parse(savedEps));
-      } else {
-        const initialEps = {
+      let savedEps = localStorage.getItem(epKey);
+      let epsMap = savedEps ? JSON.parse(savedEps) : {};
+      
+      if (!savedEps || !epsMap["1"] || epsMap["1"]?.[0]?.title === "Dawn of Darkness") {
+        epsMap = {
+          ...epsMap,
           "1": [
-            { id: "e1", title: "Dawn of Darkness", date: "07/10/2026", views: 450000, status: "Published" },
-            { id: "e2", title: "Cybernetic Dreams", date: "07/15/2026", views: 800000, status: "Published" }
+            { id: "e1", title: "Ini Semua Belum Berakhir - Episode 20", date: "17/07/2026 17:23", views: 450000, status: "Published", commentsEnabled: true },
+            { id: "e2", title: "Merasa Bersalah - Episode 19", date: "10/07/2026 18:16", views: 800000, status: "Published", commentsEnabled: true },
+            { id: "e3", title: "Malam Yang Panjang - Episode 18", date: "13/03/2026 18:00", views: 340000, status: "Published", commentsEnabled: true },
+            { id: "e4", title: "Tekad - Episode 17", date: "06/03/2026 18:00", views: 890000, status: "Published", commentsEnabled: true },
+            { id: "e5", title: "Malam Kelam - Episode 16", date: "27/02/2026 18:00", views: 120000, status: "Published", commentsEnabled: true },
+            { id: "e6", title: "Orang Aneh - Episode 15", date: "20/02/2026 18:00", views: 95000, status: "Published", commentsEnabled: true },
           ],
           "2": [
-            { id: "e3", title: "Under the Purple Sky", date: "07/12/2026", views: 340000, status: "Published" }
+            { id: "e7", title: "Under the Purple Sky", date: "12/07/2026 12:00", views: 340000, status: "Published", commentsEnabled: true }
           ],
           "3": [
-            { id: "e4", title: "Chrome Hearts Pilot", date: "07/17/2026", views: 890000, status: "Draft" }
+            { id: "e8", title: "Chrome Hearts Pilot", date: "17/07/2026 15:00", views: 890000, status: "Draft", commentsEnabled: true }
           ]
         };
-        localStorage.setItem(epKey, JSON.stringify(initialEps));
-        setEpisodesMap(initialEps);
+        localStorage.setItem(epKey, JSON.stringify(epsMap));
       }
+      setEpisodesMap(epsMap);
     }
   }, [isLoggedIn, user]);
 
@@ -203,13 +230,16 @@ function CreatorDashboardContent() {
     const newEp = {
       id: Date.now().toString(),
       title: newEpisodeTitle,
-      date: new Date().toLocaleDateString("en-US"),
+      date: new Date().toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(",", ""),
       views: 0,
-      status: "Published"
+      status: "Published",
+      commentsEnabled: commentsEnabled ? "Diaktifkan" : "Dinonaktifkan",
+      thumbnail: newEpisodeThumbUrl || null,
+      episodeNumber: episodeNumber
     };
 
     const currentEps = episodesMap[selectedSeries.id] || [];
-    const updatedEps = [...currentEps, newEp];
+    const updatedEps = [newEp, ...currentEps]; // New episodes stacked at the top
     const updatedMap = {
       ...episodesMap,
       [selectedSeries.id]: updatedEps
@@ -233,8 +263,38 @@ function CreatorDashboardContent() {
 
     // Reset forms
     setNewEpisodeTitle("");
-    setNewEpisodeFileName("No file chosen");
-    setShowAddEpisodeForm(false);
+    setNewEpisodeThumbName("No file chosen");
+    setNewEpisodeThumbUrl(null);
+    setNewEpisodeContentName("No file chosen");
+    setNewEpisodeContentUrl(null);
+    setCreatorNote("");
+    setCommentsEnabled(true);
+    setPublishImmediately(true);
+  };
+
+  const handleDeleteEpisode = (episodeId: string) => {
+    if (!selectedSeries || !user) return;
+    if (confirm("Apakah Anda yakin ingin menghapus episode ini?")) {
+      const epKey = `sampulkreativ_episodes_${user.email}`;
+      const currentEps = episodesMap[selectedSeries.id] || [];
+      const updatedEps = currentEps.filter((e: any) => e.id !== episodeId);
+      const updatedMap = {
+        ...episodesMap,
+        [selectedSeries.id]: updatedEps
+      };
+      setEpisodesMap(updatedMap);
+      localStorage.setItem(epKey, JSON.stringify(updatedMap));
+
+      // Update chapter counts
+      const updatedSeriesList = seriesList.map(s => {
+        if (s.id === selectedSeries.id) {
+          return { ...s, chapters: updatedEps.length };
+        }
+        return s;
+      });
+      setSeriesList(updatedSeriesList);
+      localStorage.setItem(`sampulkreativ_series_${user.email}`, JSON.stringify(updatedSeriesList));
+    }
   };
 
   return (
@@ -306,6 +366,7 @@ function CreatorDashboardContent() {
                 onClick={() => {
                   setSelectedSeries(null);
                   setManageView("hub");
+                  setShowAddEpisodeForm(false);
                 }}
                 style={{ fontSize: "12px" }}
               >
@@ -314,10 +375,25 @@ function CreatorDashboardContent() {
                 </svg>
                 Serial
               </button>
-              <span>/ Kelola Serial</span>
+              <span>/</span>
+              {showAddEpisodeForm ? (
+                <>
+                  <button 
+                    type="button" 
+                    className={styles.backBtn}
+                    onClick={() => setShowAddEpisodeForm(false)}
+                    style={{ fontSize: "12px" }}
+                  >
+                    Kelola Episode
+                  </button>
+                  <span>/ Tambah Episode</span>
+                </>
+              ) : (
+                <span>{manageView === "edit" ? "Kelola Serial" : "Kelola Episode"}</span>
+              )}
             </div>
             <h2 style={{ fontSize: "20px", fontWeight: "800", color: "var(--text-primary)", margin: "16px 0", textAlign: "left" }}>
-              {manageView === "edit" ? "Edit Serial" : "Kelola Episode"}
+              {showAddEpisodeForm ? "Tambah Episode" : manageView === "edit" ? "Edit Serial" : "Kelola Episode"}
             </h2>
 
             <div className={styles.seriesHubCard}>
@@ -578,64 +654,376 @@ function CreatorDashboardContent() {
             )}
 
             {manageView === "episode" && (
-              <div className={styles.episodeCard}>
-                <div className={styles.episodeHeader}>
-                  <h3 style={{ fontSize: "16px", fontWeight: "800", color: "var(--text-primary)" }}>Daftar Episode</h3>
-                  {!showAddEpisodeForm && (
-                    <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowAddEpisodeForm(true)}>
-                      + Upload New Episode
-                    </button>
-                  )}
-                </div>
-
+              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)", marginTop: 0 }}>
                 {showAddEpisodeForm ? (
-                  <form onSubmit={handleAddEpisodeSubmit} className={styles.formGrid} style={{ border: "1px solid var(--border-primary)", padding: "var(--space-md)", borderRadius: "var(--radius-lg)", marginBottom: "var(--space-md)" }}>
-                    <div className={styles.formGroup}>
-                      <label className={styles.formLabel}>Judul Episode</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Masukkan Judul Episode" 
-                        value={newEpisodeTitle}
-                        onChange={(e) => setNewEpisodeTitle(e.target.value)}
-                        required
-                      />
+                  <form onSubmit={handleAddEpisodeSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+                    {/* Card 1: General Info */}
+                    <div className={styles.formCard} style={{ margin: 0 }}>
+                      <div className={styles.formCardTitle}>Informasi Episode</div>
+                      <div className={styles.formGrid}>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Judul Serial</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            value={selectedSeries.name} 
+                            readOnly 
+                            disabled 
+                            style={{ background: "var(--bg-secondary)", opacity: 0.7 }}
+                          />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Nomor Episode</label>
+                          <input 
+                            type="number" 
+                            className="form-input" 
+                            value={episodeNumber} 
+                            onChange={(e) => setEpisodeNumber(Number(e.target.value))}
+                            required
+                          />
+                        </div>
+                        <div className={styles.formGroup}>
+                          <label className={styles.formLabel}>Judul Episode</label>
+                          <input 
+                            type="text" 
+                            className="form-input" 
+                            placeholder="Silakan masukkan judul serialmu." 
+                            value={newEpisodeTitle}
+                            onChange={(e) => setNewEpisodeTitle(e.target.value.slice(0, 60))}
+                            required
+                          />
+                          <div className={styles.counterLabel}>
+                            {newEpisodeTitle.length} / 60 karakter dimasukkan
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className={styles.formGroup}>
-                      <label className={styles.formLabel}>File Episode (PDF/ZIP/MP4)</label>
-                      <label className={styles.customFileBtn} style={{ alignSelf: "flex-start" }}>
-                        Pilih File
+
+                    {/* Card 2: Thumbnail */}
+                    <div className={styles.formCard} style={{ margin: 0 }}>
+                      <div className={styles.formCardTitle}>Thumbnail</div>
+                      <div style={{ position: "relative", width: "202px" }}>
+                        <div style={{ width: "202px", height: "142px", background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", margin: "12px 0", border: "1px solid var(--border-primary)" }}>
+                          {newEpisodeThumbUrl ? (
+                            <img src={newEpisodeThumbUrl} alt="Thumbnail Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ) : (
+                            <div style={{ textAlign: "center" }}>
+                              <span style={{ fontSize: "11px", color: "var(--text-tertiary)", display: "block", marginBottom: "8px" }}>202 x 142</span>
+                              <span style={{ fontSize: "11px", color: "var(--accent-purple-light)", border: "1px solid var(--accent-purple)", padding: "4px 8px", borderRadius: "3px" }}>Pilih File</span>
+                            </div>
+                          )}
+                        </div>
+                        <label className={styles.customFileBtn} style={{ width: "202px", textAlign: "center", display: "block" }}>
+                          Pilih File
+                          <input 
+                            type="file" 
+                            accept=".jpg,.jpeg,.png"
+                            style={{ position: "absolute", opacity: 0, cursor: "pointer", top: 0, left: 0, width: "100%", height: "100%" }}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setNewEpisodeThumbName(file.name);
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  setNewEpisodeThumbUrl(ev.target?.result as string);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <span className={styles.fileName} style={{ display: "block", marginTop: "8px" }}>{newEpisodeThumbName}</span>
+                      <div className={styles.imageRequirements} style={{ marginTop: "12px" }}>
+                        Ukuran yang disarankan adalah 202x142 dan gambar harus kurang dari 500kb.<br />
+                        Hanya format JPG, JPEG, dan PNG yang diperbolehkan.<br />
+                        Nama file hanya boleh berupa huruf dan angka bahasa Inggris.<br />
+                        Gambar yang diunggah dengan rasio 16x9 sebelum tahun 2025 akan ditampilkan dalam ukuran 202x142.
+                      </div>
+                    </div>
+
+                    {/* Card 3: Pilih File (Content) */}
+                    <div className={styles.formCard} style={{ margin: 0 }}>
+                      <div className={styles.formCardTitle}>Pilih File</div>
+                      <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                        <label className={styles.customFileBtn} style={{ position: "relative" }}>
+                          Pilih file untuk diunggah
+                          <input 
+                            type="file" 
+                            accept=".jpg,.jpeg,.png"
+                            style={{ position: "absolute", opacity: 0, cursor: "pointer", top: 0, left: 0, width: "100%", height: "100%" }}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setNewEpisodeContentName(file.name);
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  setNewEpisodeContentUrl(ev.target?.result as string);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                        <button 
+                          type="button" 
+                          className="btn btn-outline btn-sm"
+                          onClick={() => {
+                            setNewEpisodeContentName("No file chosen");
+                            setNewEpisodeContentUrl(null);
+                          }}
+                        >
+                          Hapus Semua
+                        </button>
+                        <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>
+                          {newEpisodeContentUrl ? "1 / 100 gambar" : "0"} / 50MB
+                        </span>
+                      </div>
+
+                      <div className={styles.uploadDragBox} style={{ position: "relative", minHeight: "180px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <input 
                           type="file" 
-                          onChange={(e) => setNewEpisodeFileName(e.target.files?.[0]?.name || "No file chosen")}
+                          accept=".jpg,.jpeg,.png"
+                          style={{ position: "absolute", opacity: 0, cursor: "pointer", top: 0, left: 0, width: "100%", height: "100%" }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setNewEpisodeContentName(file.name);
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                setNewEpisodeContentUrl(ev.target?.result as string);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
                         />
-                      </label>
-                      <span className={styles.fileName}>{newEpisodeFileName}</span>
+                        {newEpisodeContentUrl ? (
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "16px" }}>
+                            <img src={newEpisodeContentUrl} alt="Content Preview" style={{ maxHeight: "140px", borderRadius: "var(--radius-md)" }} />
+                            <p style={{ marginTop: "12px", fontSize: "12px", color: "#10b981", fontWeight: "bold" }}>✓ {newEpisodeContentName} siap diunggah</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: "12px", color: "var(--text-tertiary)", display: "inline-block" }}>
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                              <polyline points="17 8 12 3 7 8" />
+                              <line x1="12" y1="3" x2="12" y2="15" />
+                            </svg>
+                            <p style={{ fontWeight: "600", fontSize: "13px", color: "var(--text-secondary)" }}>Seret dan lepas file gambar</p>
+                            <span style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>Atau klik di sini untuk memilih file</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className={styles.imageRequirements} style={{ marginTop: "12px" }}>
+                        Sistem akan memotong dan mengurangi ukuran gambar yang melebihi dimensi maksimal 800x1280px secara otomatis.<br />
+                        Gambar yang melebihi dimensi maksimal dapat dioptimalkan dengan berbagai cara. Gambar tersebut dapat dipotong menjadi beberapa gambar, kualitas gambar dapat diturunkan, dimensi gambar dapat dikurangi, dan/atau ukuran dan format file dapat diubah.<br />
+                        Ukuran file maksimal untuk semua gambar yang dipotong, diubah ukurannya, dan tidak diubah adalah 2MB. Anda dapat mengunggah hingga 50MB, total 100 gambar.<br />
+                        Hanya format JPG, JPEG, PNG yang didukung.
+                      </div>
                     </div>
-                    <div className={styles.actionRow}>
-                      <button type="button" className="btn btn-outline btn-sm" onClick={() => setShowAddEpisodeForm(false)}>Batal</button>
-                      <button type="submit" className="btn btn-primary btn-sm">Simpan Episode</button>
+
+                    {/* Card 4: Tips PRO / Pratinjau / Catatan Kreator */}
+                    <div className={styles.formCard} style={{ margin: 0 }}>
+                      <div className={styles.tipsProBox}>
+                        <strong>Tips PRO:</strong> Ketelanjangan, konten seksual eksplisit, kekerasan yang tidak perlu, konten yang kasar atau berbahaya, dan pelanggaran hak cipta atau merek dagang apa pun tidak diperbolehkan. <a href="#" style={{ color: "var(--accent-gold)", textDecoration: "underline" }}>Detail Selengkapnya</a>
+                      </div>
+
+                      <div className={styles.formGroup} style={{ marginTop: "var(--space-md)" }}>
+                        <label className={styles.formLabel}>Pratinjau</label>
+                        <div style={{ display: "flex", gap: "12px" }}>
+                          <button type="button" className="btn btn-outline btn-sm" onClick={() => alert("Simulasi Pratinjau PC")}>Pratinjau PC</button>
+                          <button type="button" className="btn btn-outline btn-sm" onClick={() => alert("Simulasi Pratinjau Seluler")}>Pratinjau Seluler</button>
+                        </div>
+                      </div>
+
+                      <div className={styles.formGroup} style={{ marginTop: "var(--space-md)" }}>
+                        <label className={styles.formLabel}>Catatan Kreator (opsional)</label>
+                        <textarea
+                          className="form-textarea"
+                          rows={4}
+                          placeholder="Masukkan pesan untuk penggemarmu."
+                          value={creatorNote}
+                          onChange={(e) => setCreatorNote(e.target.value.slice(0, 400))}
+                        />
+                        <div className={styles.counterLabel}>
+                          {creatorNote.length} / 400 karakter dimasukkan
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 5: Komentar & Publikasikan */}
+                    <div className={styles.formCard} style={{ margin: 0 }}>
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>Komentar</label>
+                        <div className={styles.radioGroup}>
+                          <label className={styles.radioLabel}>
+                            <input 
+                              type="radio" 
+                              name="comments" 
+                              checked={commentsEnabled}
+                              onChange={() => setCommentsEnabled(true)}
+                            />
+                            <span>Aktifkan</span>
+                          </label>
+                          <label className={styles.radioLabel}>
+                            <input 
+                              type="radio" 
+                              name="comments" 
+                              checked={!commentsEnabled}
+                              onChange={() => setCommentsEnabled(false)}
+                            />
+                            <span>Nonaktifkan</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className={styles.formGroup} style={{ marginTop: "var(--space-md)" }}>
+                        <label className={styles.formLabel}>Publikasikan</label>
+                        <div className={styles.radioGroup}>
+                          <label className={styles.radioLabel}>
+                            <input 
+                              type="radio" 
+                              name="publish" 
+                              checked={publishImmediately}
+                              onChange={() => setPublishImmediately(true)}
+                            />
+                            <span>Segera</span>
+                          </label>
+                          <label className={styles.radioLabel}>
+                            <input 
+                              type="radio" 
+                              name="publish" 
+                              checked={!publishImmediately}
+                              onChange={() => setPublishImmediately(false)}
+                            />
+                            <span>Jadwalkan untuk nanti</span>
+                          </label>
+                        </div>
+                        <span className={styles.scheduledBadge}>
+                          Periksa Episode Terjadwal 0
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "12px", justifyContent: "center", margin: "16px 0" }}>
+                      <button 
+                        type="button" 
+                        className="btn btn-outline" 
+                        onClick={() => {
+                          // Simulate saving draft
+                          alert("Episode berhasil disimpan sebagai Draft!");
+                          setShowAddEpisodeForm(false);
+                        }}
+                      >
+                        Simpan Draft
+                      </button>
+                      <button type="submit" className="btn btn-primary" style={{ boxShadow: "var(--shadow-glow-purple)" }}>
+                        Tambah Episode
+                      </button>
                     </div>
                   </form>
                 ) : (
-                  <div className={styles.episodeList}>
-                    {(episodesMap[selectedSeries.id] || []).length > 0 ? (
-                      (episodesMap[selectedSeries.id] || []).map((ep: any) => (
-                        <div key={ep.id} className={styles.episodeItem}>
-                          <div className={styles.episodeInfo}>
-                            <span className={styles.episodeTitle}>{ep.title}</span>
-                            <span className={styles.episodeMeta}>Rilis: {ep.date} · {ep.views.toLocaleString()} Views</span>
-                          </div>
-                          <div>
-                            <span className={`status-chip ${ep.status === "Published" ? "status-chip-free" : "status-chip-ad"}`} style={ep.status === "Draft" ? { background: "rgba(245,158,11,0.15)", color: "var(--accent-gold)" } : {}}>
-                              {ep.status}
-                            </span>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p style={{ color: "var(--text-tertiary)", textAlign: "center", padding: "24px 0", fontSize: "12px" }}>Belum ada episode diunggah.</p>
-                    )}
+                  /* List Episodes view matching screenshot */
+                  <div className={styles.episodeCard}>
+                    <div className={styles.episodeHeader}>
+                      <h3 style={{ fontSize: "16px", fontWeight: "800", color: "var(--text-primary)" }}>Daftar Episode</h3>
+                      <button 
+                        type="button" 
+                        className="btn btn-primary btn-sm" 
+                        onClick={() => {
+                          setEpisodeNumber((episodesMap[selectedSeries.id] || []).length + 15); // Dynamic default
+                          setShowAddEpisodeForm(true);
+                        }}
+                        style={{ boxShadow: "var(--shadow-glow-purple)" }}
+                      >
+                        Tambah Episode
+                      </button>
+                    </div>
+
+                    <div style={{ overflowX: "auto" }}>
+                      <table className={styles.episodeTable}>
+                        <thead>
+                          <tr>
+                            <th>Thumbnail</th>
+                            <th>Judul</th>
+                            <th>Status</th>
+                            <th>Tanggal Publikasi</th>
+                            <th>Komentar</th>
+                            <th style={{ textAlign: "center" }}>Edit</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(episodesMap[selectedSeries.id] || []).length > 0 ? (
+                            (episodesMap[selectedSeries.id] || []).map((ep: any) => (
+                              <tr key={ep.id}>
+                                <td>
+                                  <div className={styles.episodeThumbCell}>
+                                    {ep.thumbnail ? (
+                                      <img src={ep.thumbnail} alt={ep.title} />
+                                    ) : (
+                                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--text-tertiary)" }}>
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                        <circle cx="8.5" cy="8.5" r="1.5" />
+                                        <polyline points="21 15 16 10 5 21" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                </td>
+                                <td>
+                                  <div className={styles.episodeTitleLink}>
+                                    {ep.title}
+                                  </div>
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: "12px", color: "var(--text-primary)", fontWeight: "600" }}>
+                                    {ep.status === "Published" ? "Diterbitkan" : "Draft"}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                                    {ep.date}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                                    {ep.commentsEnabled || "Diaktifkan"}
+                                  </span>
+                                </td>
+                                <td style={{ textAlign: "center" }}>
+                                  <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+                                    <button 
+                                      type="button" 
+                                      className="btn btn-outline btn-xs"
+                                      style={{ padding: "4px 12px", fontSize: "11px" }}
+                                      onClick={() => {
+                                        alert(`Edit detail episode "${ep.title}" (simulasi)`);
+                                      }}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button 
+                                      type="button" 
+                                      className="btn btn-outline btn-xs"
+                                      style={{ padding: "4px 12px", fontSize: "11px", background: "rgba(239, 68, 68, 0.05)", border: "1px solid rgba(239, 68, 68, 0.2)", color: "#ef4444" }}
+                                      onClick={() => handleDeleteEpisode(ep.id)}
+                                    >
+                                      Hapus
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={6} style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "48px 0" }}>
+                                Belum ada episode diunggah.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>
