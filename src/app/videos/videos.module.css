@@ -1,0 +1,93 @@
+.page { padding: var(--space-2xl) 0 var(--space-4xl); }
+
+.pageHeader { margin-bottom: var(--space-xl); }
+.pageTitle {
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  display: flex; align-items: center; gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+.pageDesc { font-size: var(--text-base); color: var(--text-secondary); }
+
+.filters { margin-bottom: var(--space-xl); }
+.genreTags { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-lg);
+}
+
+.card {
+  display: block;
+  text-decoration: none;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  transition: all var(--transition-base);
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--accent-pink);
+}
+
+.cardCover {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 3/4;
+}
+
+.coverImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform var(--transition-slow);
+}
+.card:hover .coverImage { transform: scale(1.05); }
+
+.cardPlayBtn {
+  width: 44px; height: 44px;
+  background: rgba(0,0,0,0.5);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: #fff;
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.cardBadge { position: absolute; top: var(--space-sm); left: var(--space-sm); z-index: 2; }
+
+.cardOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--space-sm);
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  display: flex;
+  justify-content: flex-end;
+  z-index: 1;
+}
+
+.viewsLabel {
+  font-size: 10px;
+  color: #fff;
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+.cardBody { padding: var(--space-md); }
+.cardTitle { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.cardMeta { display: flex; gap: var(--space-md); font-size: var(--text-xs); color: var(--text-tertiary); }
+
+@media (max-width: 600px) {
+  .grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-md); }
+}

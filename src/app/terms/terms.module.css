@@ -1,0 +1,64 @@
+.page {
+  padding: var(--space-4xl) 0 var(--space-4xl);
+  min-height: calc(100vh - 200px);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3xl);
+}
+
+.contentContainer {
+  column-count: 3;
+  column-gap: var(--space-2xl);
+  color: var(--text-secondary);
+}
+
+/* Ensure sections don't break awkwardly across columns */
+.section {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  margin-bottom: var(--space-xl);
+}
+
+.sectionTitle {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--accent-gold);
+  margin-bottom: var(--space-sm);
+  display: block;
+}
+
+.section p {
+  font-size: var(--text-sm);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--space-sm);
+  color: var(--text-secondary);
+}
+
+.section ul {
+  padding-left: var(--space-lg);
+  margin-bottom: var(--space-sm);
+}
+
+.section li {
+  font-size: var(--text-sm);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: 4px;
+}
+
+@media (max-width: 900px) {
+  .contentContainer {
+    column-count: 2;
+  }
+}
+
+@media (max-width: 600px) {
+  .contentContainer {
+    column-count: 1;
+  }
+}
