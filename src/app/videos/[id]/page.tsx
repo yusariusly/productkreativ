@@ -81,12 +81,40 @@ export default function VideoPlayerPage({
         }
       }
     }
+
+    // If not found in creator series, check if custom episodes exist in localStorage anyway
+    let userEps: any[] = [];
+    if (foundEpisodes.length === 0) {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("sampulkreativ_episodes_")) {
+          try {
+            const epMap = JSON.parse(localStorage.getItem(key) || "{}");
+            const matchEps = epMap[id] || [];
+            if (matchEps.length > 0) {
+              userEps = matchEps.map((ep: any, index: number) => ({
+                id: ep.id,
+                seriesId: id,
+                number: ep.episodeNumber || (matchEps.length - index),
+                title: ep.title,
+                publishedAt: ep.date,
+                thumbnailUrl: ep.thumbnail || null,
+                contentUrl: ep.contentUrl || null
+              }));
+              break;
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      }
+    }
     
     if (!foundSeries) {
       const dummy = videoSeries.find((s) => s.id === id);
       if (dummy) {
         foundSeries = dummy;
-        foundEpisodes = Array.from({ length: dummy.totalChapters }).map((_, idx) => ({
+        foundEpisodes = userEps.length > 0 ? userEps : Array.from({ length: dummy.totalChapters }).map((_, idx) => ({
           number: idx + 1,
           title: `Episode ${idx + 1}`
         }));
@@ -95,6 +123,10 @@ export default function VideoPlayerPage({
     
     if (!foundSeries) {
       foundSeries = videoSeries[0];
+      foundEpisodes = userEps.length > 0 ? userEps : Array.from({ length: foundSeries.totalChapters }).map((_, idx) => ({
+        number: idx + 1,
+        title: `Episode ${idx + 1}`
+      }));
     }
     
     setSeries(foundSeries);

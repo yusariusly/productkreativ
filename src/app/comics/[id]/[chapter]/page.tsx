@@ -186,13 +186,16 @@ export default function ComicViewerPage({
               likes: 0,
               comments: 0,
               thumbnailUrl: ep.thumbnail || null,
-              contentUrl: ep.contentUrl || null
+              contentUrl: ep.contentUrl || null,
+              pages: ep.pages || []
             }));
             
             const matchedEp = foundEpisodes.find((e: any) => e.number === currentChapter);
             if (matchedEp) {
               foundChapter = matchedEp;
-              if (matchedEp.contentUrl) {
+              if (matchedEp.pages && matchedEp.pages.length > 0) {
+                foundPanels = matchedEp.pages;
+              } else if (matchedEp.contentUrl) {
                 foundPanels = [matchedEp.contentUrl];
               } else {
                 foundPanels = comicPanels;

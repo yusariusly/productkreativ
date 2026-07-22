@@ -85,20 +85,52 @@ export default function NovelDetailPage({ params }: { params: Promise<{ id: stri
         }
       }
     }
+
+    // If not found in creator series, check if custom episodes exist in localStorage anyway
+    let userEps: any[] = [];
+    if (foundEpisodes.length === 0) {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("sampulkreativ_episodes_")) {
+          try {
+            const epMap = JSON.parse(localStorage.getItem(key) || "{}");
+            // wait, we can just search all epKeys
+            const matchEps = epMap[id] || [];
+            if (matchEps.length > 0) {
+              userEps = matchEps.map((ep: any, index: number) => ({
+                id: ep.id,
+                seriesId: id,
+                number: ep.episodeNumber || (matchEps.length - index),
+                title: ep.title,
+                accessType: "free" as const,
+                coinPrice: 0,
+                publishedAt: ep.date,
+                views: ep.views || 0,
+                likes: 0,
+                comments: 0
+              }));
+              break;
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      }
+    }
     
     // 2. If not found in creator series, search in dummy novelSeries
     if (!foundSeries) {
       const dummy = novelSeries.find((s) => s.id === id);
       if (dummy) {
         foundSeries = dummy;
-        foundEpisodes = sampleNovelChapters;
+        foundEpisodes = userEps.length > 0 ? userEps : sampleNovelChapters;
       }
     }
     
     // 3. Fallback if completely missing
     if (!foundSeries) {
       foundSeries = novelSeries[0];
-      foundEpisodes = sampleNovelChapters;
+      foundEpisodes = userEps.length > 0 ? userEps : sampleNovelChapters;
     }
     
     setSeries(foundSeries);

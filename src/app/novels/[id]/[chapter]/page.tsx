@@ -137,12 +137,17 @@ export default function NovelReaderPage({
               likes: 0,
               comments: 0,
               thumbnailUrl: ep.thumbnail || null,
-              contentUrl: ep.contentUrl || null
+              contentUrl: ep.contentUrl || null,
+              pages: ep.pages || []
             }));
             
             const matchedEp = foundEpisodes.find((e: any) => e.number === currentChapter);
-            if (matchedEp && matchedEp.contentUrl) {
-              foundPanels = [matchedEp.contentUrl];
+            if (matchedEp) {
+              if (matchedEp.pages && matchedEp.pages.length > 0) {
+                foundPanels = matchedEp.pages;
+              } else if (matchedEp.contentUrl) {
+                foundPanels = [matchedEp.contentUrl];
+              }
             }
             break;
           }
