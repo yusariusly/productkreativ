@@ -9,6 +9,7 @@ interface User {
 
 interface AuthContextType {
   isLoggedIn: boolean;
+  isLoading: boolean;
   user: User | null;
   coins: number;
   bookmarks: string[];
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [history, setHistory] = useState<Array<{ id: string; lastChapter: number; progress: number; type: "comic" | "novel" }>>([]);
@@ -75,7 +77,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setBookmarks([]);
       setHistory([]);
     }
-  }, [isLoggedIn]);
+    setIsLoading(false);
+  }, []);
 
   const login = (email: string, name?: string) => {
     localStorage.setItem("sampulkreativ_logged", "true");
@@ -148,6 +151,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         isLoggedIn,
+        isLoading,
         user,
         coins,
         bookmarks,

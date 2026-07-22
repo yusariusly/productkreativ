@@ -8,7 +8,7 @@ import styles from "./dashboard.module.css";
 import { formatNumber } from "@/data/dummy";
 
 function CreatorDashboardContent() {
-  const { isLoggedIn, logout, user } = useAuth();
+  const { isLoggedIn, isLoading, logout, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -88,10 +88,10 @@ function CreatorDashboardContent() {
   const [seriesList, setSeriesList] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoading && !isLoggedIn) {
       router.push("/login?redirect=/creator/dashboard");
     }
-  }, [isLoggedIn, router]);
+  }, [isLoading, isLoggedIn, router]);
 
   useEffect(() => {
     if (searchParams && searchParams.get("upload") === "true") {
@@ -138,6 +138,14 @@ function CreatorDashboardContent() {
       }
     }
   }, [isLoggedIn, user]);
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: "120px 0", textAlign: "center", color: "var(--text-secondary)" }}>
+        <p>Memuat dasbor...</p>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return (
