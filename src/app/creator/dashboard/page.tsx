@@ -93,6 +93,7 @@ function CreatorDashboardContent() {
   const [creatorNote, setCreatorNote] = useState("");
   const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [publishImmediately, setPublishImmediately] = useState(true);
+  const [editingEpisodeId, setEditingEpisodeId] = useState<string | null>(null);
 
   // Series List State
   const [seriesList, setSeriesList] = useState<any[]>([]);
@@ -227,19 +228,42 @@ function CreatorDashboardContent() {
     if (!newEpisodeTitle.trim() || !selectedSeries || !user) return;
     
     const epKey = `sampulkreativ_episodes_${user.email}`;
-    const newEp = {
-      id: Date.now().toString(),
-      title: newEpisodeTitle,
-      date: new Date().toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(",", ""),
-      views: 0,
-      status: "Published",
-      commentsEnabled: commentsEnabled ? "Diaktifkan" : "Dinonaktifkan",
-      thumbnail: newEpisodeThumbUrl || null,
-      episodeNumber: episodeNumber
-    };
-
     const currentEps = episodesMap[selectedSeries.id] || [];
-    const updatedEps = [newEp, ...currentEps]; // New episodes stacked at the top
+    let updatedEps: any[];
+
+    if (editingEpisodeId) {
+      // Edit mode
+      updatedEps = currentEps.map((ep: any) => {
+        if (ep.id === editingEpisodeId) {
+          return {
+            ...ep,
+            title: newEpisodeTitle,
+            commentsEnabled: commentsEnabled ? "Diaktifkan" : "Dinonaktifkan",
+            thumbnail: newEpisodeThumbUrl || ep.thumbnail,
+            episodeNumber: episodeNumber,
+            creatorNote: creatorNote,
+            publishImmediately: publishImmediately
+          };
+        }
+        return ep;
+      });
+    } else {
+      // Add mode
+      const newEp = {
+        id: Date.now().toString(),
+        title: newEpisodeTitle,
+        date: new Date().toLocaleString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).replace(",", ""),
+        views: 0,
+        status: "Published",
+        commentsEnabled: commentsEnabled ? "Diaktifkan" : "Dinonaktifkan",
+        thumbnail: newEpisodeThumbUrl || null,
+        episodeNumber: episodeNumber,
+        creatorNote: creatorNote,
+        publishImmediately: publishImmediately
+      };
+      updatedEps = [newEp, ...currentEps]; // New episodes stacked at the top
+    }
+
     const updatedMap = {
       ...episodesMap,
       [selectedSeries.id]: updatedEps
@@ -270,6 +294,8 @@ function CreatorDashboardContent() {
     setCreatorNote("");
     setCommentsEnabled(true);
     setPublishImmediately(true);
+    setEditingEpisodeId(null);
+    setShowAddEpisodeForm(false);
   };
 
   const handleDeleteEpisode = (episodeId: string) => {
@@ -995,9 +1021,17 @@ function CreatorDashboardContent() {
                                       type="button" 
                                       className="btn btn-outline btn-xs"
                                       style={{ padding: "4px 12px", fontSize: "11px" }}
-                                      onClick={() => {
-                                        alert(`Edit detail episode "${ep.title}" (simulasi)`);
-                                      }}
+                                       onClick={() => {
+                                         setEditingEpisodeId(ep.id);
+                                         setEpisodeNumber(ep.episodeNumber || Number(ep.title.match(/\d+/)?.[0]) || 20);
+                                         setNewEpisodeTitle(ep.title);
+                                         setNewEpisodeThumbName(ep.thumbnail ? "uploaded_thumbnail.png" : "No file chosen");
+                                         setNewEpisodeThumbUrl(ep.thumbnail || null);
+                                         setCreatorNote(ep.creatorNote || "");
+                                         setCommentsEnabled(ep.commentsEnabled !== "Dinonaktifkan");
+                                         setPublishImmediately(ep.publishImmediately !== false);
+                                         setShowAddEpisodeForm(true);
+                                       }}
                                     >
                                       Edit
                                     </button>
