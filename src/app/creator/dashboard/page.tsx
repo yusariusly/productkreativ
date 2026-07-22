@@ -371,19 +371,10 @@ function CreatorDashboardContent() {
           </div>
           <div className={styles.headerButtons}>
             {!showUploadForm && activeMenu === "series" && (
-              <button className="btn btn-primary" style={{ marginRight: "8px" }} onClick={() => setShowUploadForm(true)}>
+              <button className="btn btn-primary" onClick={() => setShowUploadForm(true)}>
                 Upload New Series
               </button>
             )}
-            <button
-              className="btn btn-outline"
-              onClick={() => {
-                logout();
-                router.push("/");
-              }}
-            >
-              Log Out
-            </button>
           </div>
         </div>
 
@@ -1259,8 +1250,14 @@ function CreatorDashboardContent() {
                       </div>
                       <div className={styles.hubLang}>Indonesian</div>
                       <div className={styles.hubTags}>
-                        <span className={styles.hubTag}>#{s.type.toUpperCase()}</span>
-                        <span className={styles.hubTag}>#Original</span>
+                        {s.category1 && <span className={styles.hubTag}>#{s.category1.toUpperCase()}</span>}
+                        {s.category2 && <span className={styles.hubTag}>#{s.category2.toUpperCase()}</span>}
+                        {!s.category1 && !s.category2 && (
+                          <>
+                            <span className={styles.hubTag}>#{s.type.toUpperCase()}</span>
+                            <span className={styles.hubTag}>#Original</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
